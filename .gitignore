@@ -1,3 +1,6 @@
 ecogen.db
 .python-version
 .env
+__pycache__/
+*.py[cod]
+.venv/
