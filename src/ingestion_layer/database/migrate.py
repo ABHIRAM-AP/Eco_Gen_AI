@@ -34,6 +34,12 @@ def run_migrations(db_path: str = "ecogen.db") -> list[str]:
     """
     Safely adds missing columns to SQLite database tables without altering or dropping existing rows.
     """
+    if not os.path.exists(db_path) and not os.path.isabs(db_path):
+        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+        candidate = os.path.join(base_dir, db_path)
+        if os.path.exists(candidate):
+            db_path = candidate
+
     if not os.path.exists(db_path):
         logger.info(f"Database {db_path} does not exist yet; skipping ALTER TABLE.")
         return []

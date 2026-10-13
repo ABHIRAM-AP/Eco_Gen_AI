@@ -8,6 +8,8 @@ class EventCreate(BaseModel):
     tokens_in: int = 0
     tokens_out: int = 0
     runtime_sec: float
+    power_draw_watts: Optional[float] = None
+    carbon_intensity: Optional[float] = None
     region: Optional[str] = None
     provider: Optional[str] = None
     pue: Optional[float] = 1.2
@@ -23,8 +25,6 @@ class EventCreate(BaseModel):
 
 class EventOut(EventCreate):
     id: int
-    power_draw_watts: Optional[float] = None
-    carbon_intensity: Optional[float] = None
     timestamp: datetime
 
     class Config:

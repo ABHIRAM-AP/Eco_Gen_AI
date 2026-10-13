@@ -3,6 +3,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from .collectors.carbon_api import get_carbon_intensity
+from .collectors.gen_ai_data import get_model_param_count, get_active_param_count
 from .database.db import init_database, get_database
 from .models.model import InferenceEvent, HardwareSnapshot
 from .schemas.schema import EventCreate, EventOut, HardwareSnapshotCreate, HardwareSnapshotOut
@@ -32,10 +33,18 @@ def log_event(event: EventCreate, db: Session = Depends(get_database)):
         event_dict["num_gpus_used"] = 1
     if event_dict.get("batch_size") is None:
         event_dict["batch_size"] = 1
+    if event_dict.get("param_count_b") is None and event_dict.get("model_name"):
+        event_dict["param_count_b"] = get_model_param_count(event_dict["model_name"])
+    if event_dict.get("active_param_count_b") is None and event_dict.get("param_count_b") is not None:
+        event_dict["active_param_count_b"] = get_active_param_count(
+            event_dict.get("model_name", ""), event_dict.get("param_count_b")
+        )
 
     db_event = InferenceEvent(**event_dict)
     if db_event.region:
-        db_event.carbon_intensity = get_carbon_intensity(db_event.region)
+        fetched_ci = get_carbon_intensity(db_event.region)
+        if fetched_ci is not None or db_event.carbon_intensity is None:
+            db_event.carbon_intensity = fetched_ci
     db.add(db_event)
     db.commit()
     db.refresh(db_event)
@@ -43,8 +52,15 @@ def log_event(event: EventCreate, db: Session = Depends(get_database)):
 
 
 @app.post("/ingest/hardware", response_model=HardwareSnapshotOut)
-def log_hardware(snap: HardwareSnapshotCreate, db: Session = Depends(get_database)):
-    db_snap = HardwareSnapshot(**snap.dict())
+def log_hardware(
+    snap: HardwareSnapshotCreate,
+    sample_idle: bool = False,
+    db: Session = Depends(get_database),
+):
+    snap_dict = snap.dict()
+    if snap_dict.get("idle_power_baseline_w") is None and sample_idle:
+        snap_dict["idle_power_baseline_w"] = get_idle_power_baseline(samples=2, interval_sec=0.2)
+    db_snap = HardwareSnapshot(**snap_dict)
     db.add(db_snap)
     db.commit()
     db.refresh(db_snap)

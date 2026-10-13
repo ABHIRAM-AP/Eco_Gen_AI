@@ -54,6 +54,15 @@ MODEL_PARAM_MAP: dict[str, float] = {
     "phi-4": 14.0,
 }
 
+# Known MoE active parameters per token (in billions)
+MOE_ACTIVE_PARAM_MAP: dict[str, float] = {
+    "mixtral:8x7b": 12.9,
+    "mixtral:8x22b": 39.0,
+    "deepseek-v2": 21.0,
+    "deepseek-v3": 37.0,
+    "deepseek-r1": 37.0,
+}
+
 
 def get_model_param_count(model_name: str) -> Optional[float]:
     if not model_name:
@@ -68,11 +77,32 @@ def get_model_param_count(model_name: str) -> Optional[float]:
     return None
 
 
+def get_active_param_count(model_name: str, total_params: Optional[float] = None) -> Optional[float]:
+    if not model_name:
+        return total_params
+    key = model_name.strip().lower()
+    base_name = key.split("/")[-1] if "/" in key else key
+    if base_name in MOE_ACTIVE_PARAM_MAP:
+        return MOE_ACTIVE_PARAM_MAP[base_name]
+    if key in MOE_ACTIVE_PARAM_MAP:
+        return MOE_ACTIVE_PARAM_MAP[key]
+    # For dense models, active parameters equal total parameter count
+    return total_params
+
+
 def _extract_tokens(response, provider: str):
     if provider == "gemini":
         usage = getattr(response, "usage_metadata", None)
         if usage is not None:
-            return getattr(usage, "prompt_token_count", 0), getattr(usage, "candidates_token_count", 0)
+            prompt_tokens = getattr(usage, "prompt_token_count", None)
+            cand_tokens = getattr(usage, "candidates_token_count", None)
+            if prompt_tokens is None and isinstance(usage, dict):
+                prompt_tokens = usage.get("prompt_token_count", 0)
+                cand_tokens = usage.get("candidates_token_count", 0)
+            return prompt_tokens or 0, cand_tokens or 0
+        if isinstance(response, dict):
+            usage = response.get("usage_metadata") or response.get("usage", {})
+            return usage.get("prompt_token_count", 0), usage.get("candidates_token_count", 0)
         return 0, 0
 
     if provider == "ollama":
@@ -85,7 +115,7 @@ def _extract_tokens(response, provider: str):
 
 def post_event(event_data: dict, region: Optional[str] = None):
     payload = {**event_data}
-    if region is not None:
+    if region is not None and "region" not in payload:
         payload["region"] = region
     try:
         resp = requests.post(INGEST_URL, json=payload, timeout=5)
@@ -119,7 +149,11 @@ def track_inference(
     provider: "gemini" or "ollama" — controls how token usage is extracted and is persisted to the DB.
     """
     resolved_param_count = param_count_b if param_count_b is not None else get_model_param_count(model_name)
-    resolved_active_param_count = active_param_count_b if active_param_count_b is not None else resolved_param_count
+    resolved_active_param_count = (
+        active_param_count_b
+        if active_param_count_b is not None
+        else get_active_param_count(model_name, resolved_param_count)
+    )
 
     def decorator(fn):
         @wraps(fn)
@@ -147,6 +181,8 @@ def track_inference(
                 "param_count_b": resolved_param_count,
                 "active_param_count_b": resolved_active_param_count,
             }
+            if region is not None:
+                event_data["region"] = region
             wrapper.last_event = event_data
 
             if auto_post:
