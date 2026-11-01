@@ -9,6 +9,8 @@ INGEST_URL = "http://127.0.0.1:8000/ingest/event"
 # Static lookup mapping known model names to parameter counts in billions (best-effort)
 MODEL_PARAM_MAP: dict[str, float] = {
     # Gemma models
+    "gemma4:31b": 31.0,
+    "gemma4:31b-cloud": 31.0,
     "gemma3:270m": 0.27,
     "gemma3:1b": 1.0,
     "gemma3:4b": 4.0,
@@ -126,6 +128,9 @@ def post_event(event_data: dict, region: Optional[str] = None):
         return None
 
 
+from .hardware_data import get_gpu_power_draw, get_cpu_power_estimate
+
+
 def track_inference(
     model_name: str,
     task_type: str,
@@ -141,6 +146,8 @@ def track_inference(
     use_case: Optional[str] = None,
     param_count_b: Optional[float] = None,
     active_param_count_b: Optional[float] = None,
+    power_draw_watts: Optional[float] = None,
+    auto_sample_power: bool = True,
     **extra_kwargs,
 ):
     """
@@ -164,6 +171,12 @@ def track_inference(
 
             tokens_in, tokens_out = _extract_tokens(response, provider)
 
+            # Sample or use provided power draw
+            active_power = power_draw_watts
+            if active_power is None and auto_sample_power:
+                hw_power = get_gpu_power_draw()
+                active_power = hw_power if hw_power is not None else get_cpu_power_estimate()
+
             event_data = {
                 "model_name": model_name,
                 "task_type": task_type,
@@ -171,6 +184,7 @@ def track_inference(
                 "tokens_in": tokens_in,
                 "tokens_out": tokens_out,
                 "runtime_sec": runtime,
+                "power_draw_watts": active_power,
                 "pue": pue,
                 "gpu_model": gpu_model,
                 "num_gpus_used": num_gpus_used,

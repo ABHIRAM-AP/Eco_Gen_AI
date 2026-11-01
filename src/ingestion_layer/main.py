@@ -23,6 +23,7 @@ def on_startup():
     init_database()
 
 
+@app.post("/event", response_model=EventOut)
 @app.post("/ingest/event", response_model=EventOut)
 def log_event(event: EventCreate, db: Session = Depends(get_database)):
     event_dict = event.dict()
@@ -51,6 +52,7 @@ def log_event(event: EventCreate, db: Session = Depends(get_database)):
     return db_event
 
 
+@app.post("/hardware", response_model=HardwareSnapshotOut)
 @app.post("/ingest/hardware", response_model=HardwareSnapshotOut)
 def log_hardware(
     snap: HardwareSnapshotCreate,
@@ -67,6 +69,7 @@ def log_hardware(
     return db_snap
 
 
+@app.post("/hardware/auto", response_model=HardwareSnapshotOut)
 @app.post("/ingest/hardware/auto", response_model=HardwareSnapshotOut)
 def log_hardware_auto(
     device_id: str,
