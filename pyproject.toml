@@ -1,3 +1,9 @@
+[tool.pyright]
+pythonPath = ".venv/bin/python"
+pythonPlatform = "Linux"
+# Treat the project root as the source root so `src.*` imports resolve correctly
+extraPaths = ["."]
+
 [project]
 name = "eco-gen-ai"
 version = "0.1.0"
