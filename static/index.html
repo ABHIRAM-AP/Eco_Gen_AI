@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EcoGen-AI — Carbon & Energy Intelligence Platform</title>
+  <meta name="description" content="EcoGen-AI: Full-stack carbon footprint tracking, energy monitoring, and what-if optimization platform for Generative AI workloads.">
+
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <!-- Sticky Header -->
+  <header class="app-header">
+    <div class="brand-wrapper">
+      <div class="brand-logo">
+        <i data-lucide="leaf"></i>
+      </div>
+      <div class="brand-title-wrap">
+        <h1>EcoGen-AI <span style="font-size:0.75rem; font-weight:600; color:var(--eco-mint); letter-spacing:0.04em; border:1px solid rgba(16,185,129,0.3); padding:2px 8px; border-radius:9999px;">v2.0</span></h1>
+        <div class="brand-subtitle">
+          <span>Carbon & Energy Intelligence for Generative AI</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Status Indicators -->
+    <div class="header-status-ribbon">
+      <div class="status-chip online" id="serverStatusChip">
+        <span class="status-dot"></span>
+        <span id="serverStatusText">Platform Live</span>
+      </div>
+      <div class="status-chip layer">
+        <i data-lucide="activity" style="width:14px; height:14px;"></i>
+        <span>Layer 1: Ingest</span>
+      </div>
+      <div class="status-chip layer">
+        <i data-lucide="cpu" style="width:14px; height:14px;"></i>
+        <span>Layer 2: Analytics</span>
+      </div>
+    </div>
+
+    <!-- Header Actions -->
+    <div class="header-actions">
+      <button class="btn btn-primary btn-sm" id="btnOpenLogModal">
+        <i data-lucide="plus-circle" style="width:16px; height:16px;"></i>
+        <span>Log Event</span>
+      </button>
+      <button class="btn btn-secondary btn-sm" id="btnRefreshData" title="Refresh live telemetry">
+        <i data-lucide="refresh-cw" style="width:16px; height:16px;" id="refreshIcon"></i>
+        <span>Refresh</span>
+      </button>
+      <button class="btn btn-accent btn-sm" id="btnOpenGuideWalkthrough">
+        <i data-lucide="presentation" style="width:16px; height:16px;"></i>
+        <span>Guide Demo</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-container">
+
+    <!-- Guide Presentation Banner -->
+    <div class="guide-banner" id="guideBanner">
+      <div class="guide-banner-content">
+        <div class="guide-icon">
+          <i data-lucide="award"></i>
+        </div>
+        <div>
+          <div class="guide-title">Guide Review Presentation Ready — Layers 1 &amp; 2 Deployed</div>
+          <div class="guide-desc">
+            Demonstrating GenAI energy accounting (Tier 1 measured &amp; Tier 2 FLOPs fallback), Scope 2 grid carbon + Scope 3 embodied amortization, task benchmarks, and interactive What-If simulation.
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="document.getElementById('guideBanner').style.display='none'">
+        <i data-lucide="x" style="width:14px; height:14px;"></i>
+      </button>
+    </div>
+
+    <!-- Executive KPI Ribbon (Summary View) -->
+    <section class="kpi-grid">
+      <!-- Total Energy -->
+      <div class="kpi-card" style="--card-accent: var(--eco-green);">
+        <div class="kpi-header">
+          <span class="kpi-label">Total Energy</span>
+          <div class="kpi-icon-wrap"><i data-lucide="zap" style="width:18px; height:18px;"></i></div>
+        </div>
+        <div class="kpi-value"><span id="kpiTotalEnergy">--</span><span class="kpi-unit">kWh</span></div>
+        <div class="kpi-meta">
+          <span id="kpiEnergySubtext">Cumulative inference</span>
+          <span class="kpi-pill" id="kpiTierRatio">Tier 1: 0%</span>
+        </div>
+      </div>
+
+      <!-- Total Carbon -->
+      <div class="kpi-card" style="--card-accent: var(--eco-mint);">
+        <div class="kpi-header">
+          <span class="kpi-label">Carbon Footprint</span>
+          <div class="kpi-icon-wrap"><i data-lucide="cloud" style="width:18px; height:18px;"></i></div>
+        </div>
+        <div class="kpi-value"><span id="kpiTotalCarbon">--</span><span class="kpi-unit">gCO₂eq</span></div>
+        <div class="kpi-meta">
+          <span>Scope 2 + Scope 3</span>
+          <span class="kpi-pill" id="kpiAvgCarbonEvent">-- g/event</span>
+        </div>
+      </div>
+
+      <!-- Total Tokens -->
+      <div class="kpi-card" style="--card-accent: var(--eco-teal);">
+        <div class="kpi-header">
+          <span class="kpi-label">Tokens Processed</span>
+          <div class="kpi-icon-wrap"><i data-lucide="binary" style="width:18px; height:18px;"></i></div>
+        </div>
+        <div class="kpi-value"><span id="kpiTotalTokens">--</span><span class="kpi-unit">tokens</span></div>
+        <div class="kpi-meta">
+          <span>Prompt &amp; Completion</span>
+          <span class="kpi-pill" id="kpiTokensPerKwh">-- tok/kWh</span>
+        </div>
+      </div>
+
+      <!-- Compute Energy Intensity -->
+      <div class="kpi-card" style="--card-accent: var(--eco-amber);">
+        <div class="kpi-header">
+          <span class="kpi-label">Energy per Token</span>
+          <div class="kpi-icon-wrap"><i data-lucide="gauge" style="width:18px; height:18px;"></i></div>
+        </div>
+        <div class="kpi-value"><span id="kpiEnergyPerToken">--</span><span class="kpi-unit">μJ/tok</span></div>
+        <div class="kpi-meta">
+          <span>1 kWh = 3.6×10⁹ μJ</span>
+          <span class="kpi-pill" id="kpiGco2Per1k">-- g/1K tok</span>
+        </div>
+      </div>
+
+      <!-- Grid Carbon Intensity -->
+      <div class="kpi-card" style="--card-accent: var(--eco-blue);">
+        <div class="kpi-header">
+          <span class="kpi-label">Avg Grid Intensity</span>
+          <div class="kpi-icon-wrap"><i data-lucide="globe" style="width:18px; height:18px;"></i></div>
+        </div>
+        <div class="kpi-value"><span id="kpiAvgGridIntensity">--</span><span class="kpi-unit">g/kWh</span></div>
+        <div class="kpi-meta">
+          <span id="kpiRegionsTracked">WattTime / UK Grid</span>
+          <span class="kpi-pill" style="background:rgba(59,130,246,0.15); color:#93c5fd;">Live Grid</span>
+        </div>
+      </div>
+
+      <!-- Events & Workloads -->
+      <div class="kpi-card" style="--card-accent: var(--eco-violet);">
+        <div class="kpi-header">
+          <span class="kpi-label">Recorded Events</span>
+          <div class="kpi-icon-wrap"><i data-lucide="database" style="width:18px; height:18px;"></i></div>
+        </div>
+        <div class="kpi-value"><span id="kpiTotalEvents">--</span><span class="kpi-unit">runs</span></div>
+        <div class="kpi-meta">
+          <span id="kpiModelCount">-- models</span>
+          <span class="kpi-pill" id="kpiDeptCount" style="background:rgba(139,92,246,0.15); color:#c4b5fd;">-- depts</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Navigation Tabs -->
+    <nav class="tabs-nav">
+      <button class="tab-btn active" data-tab="tab-overview">
+        <i data-lucide="bar-chart-3" style="width:16px; height:16px;"></i>
+        <span>Executive Dashboard</span>
+      </button>
+      <button class="tab-btn" data-tab="tab-events">
+        <i data-lucide="list" style="width:16px; height:16px;"></i>
+        <span>Layer 1: Ingestion Feed</span>
+      </button>
+      <button class="tab-btn" data-tab="tab-simulator">
+        <i data-lucide="sliders" style="width:16px; height:16px;"></i>
+        <span>What-If Simulator</span>
+      </button>
+      <button class="tab-btn" data-tab="tab-benchmarks">
+        <i data-lucide="trophy" style="width:16px; height:16px;"></i>
+        <span>Layer 2: Benchmarks &amp; Rankings</span>
+      </button>
+      <button class="tab-btn" data-tab="tab-architecture">
+        <i data-lucide="book-open" style="width:16px; height:16px;"></i>
+        <span>Architecture &amp; Formulas</span>
+      </button>
+    </nav>
+
+    <!-- ======================================================== -->
+    <!-- TAB 1: EXECUTIVE DASHBOARD OVERVIEW -->
+    <!-- ======================================================== -->
+    <div class="tab-panel active" id="tab-overview">
+      <!-- 2x2 Charts Grid -->
+      <div class="charts-grid-2">
+        <!-- Model Carbon & Efficiency -->
+        <div class="glass-card">
+          <div class="glass-card-header">
+            <div>
+              <div class="card-title">
+                <i data-lucide="award" style="color:var(--eco-mint); width:18px; height:18px;"></i>
+                <span>Model Carbon &amp; Energy Efficiency</span>
+              </div>
+              <div class="card-subtitle">Comparison of gCO₂eq per event and compute efficiency (tokens/kWh)</div>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="chartModelEfficiency"></canvas>
+          </div>
+        </div>
+
+        <!-- Department ESG Attribution -->
+        <div class="glass-card">
+          <div class="glass-card-header">
+            <div>
+              <div class="card-title">
+                <i data-lucide="pie-chart" style="color:var(--eco-teal); width:18px; height:18px;"></i>
+                <span>Department ESG Carbon Attribution</span>
+              </div>
+              <div class="card-subtitle">Organizational breakdown (% share of AI carbon emissions)</div>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="chartDepartmentESG"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="charts-grid-2">
+        <!-- Carbon Intensity Grid Trend -->
+        <div class="glass-card">
+          <div class="glass-card-header">
+            <div>
+              <div class="card-title">
+                <i data-lucide="trending-up" style="color:var(--eco-green); width:18px; height:18px;"></i>
+                <span>Regional Grid Carbon Intensity Trend</span>
+              </div>
+              <div class="card-subtitle">Grid emissions factor (gCO₂eq/kWh) across inference timestamps</div>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="chartCarbonTrend"></canvas>
+          </div>
+        </div>
+
+        <!-- Provider Comparison -->
+        <div class="glass-card">
+          <div class="glass-card-header">
+            <div>
+              <div class="card-title">
+                <i data-lucide="server" style="color:var(--eco-violet); width:18px; height:18px;"></i>
+                <span>Provider Energy Comparison</span>
+              </div>
+              <div class="card-subtitle">On-prem (Ollama) vs Cloud API (Gemini / others) average energy</div>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="chartProviderComparison"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- TAB 2: LAYER 1 INGESTION FEED & HARDWARE TELEMETRY -->
+    <!-- ======================================================== -->
+    <div class="tab-panel" id="tab-events">
+      <div class="glass-card" style="margin-bottom: 1.5rem;">
+        <div class="glass-card-header" style="flex-wrap: wrap; gap: 0.75rem;">
+          <div>
+            <div class="card-title">
+              <i data-lucide="layers" style="color:var(--eco-mint); width:18px; height:18px;"></i>
+              <span>Layer 1: Live Inference Event Stream</span>
+            </div>
+            <div class="card-subtitle">Intercepts LLM inference, runtime, token telemetry, and regional carbon factors</div>
+          </div>
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <input type="text" id="eventSearchInput" class="form-input" placeholder="Search model, task..." style="width:200px; padding:0.4rem 0.75rem; font-size:0.78rem;">
+            <button class="btn btn-primary btn-sm" id="btnLogEventInline">
+              <i data-lucide="plus" style="width:14px; height:14px;"></i> Log Event
+            </button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table" id="eventsTable">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Timestamp</th>
+                <th>Model</th>
+                <th>Task Type</th>
+                <th>Provider</th>
+                <th>Tokens</th>
+                <th>Runtime</th>
+                <th>Power</th>
+                <th>GPU / PUE</th>
+                <th>Region</th>
+                <th>Carbon</th>
+                <th>Tier</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="eventsTableBody">
+              <tr>
+                <td colspan="13" style="text-align:center; padding:2rem; color:var(--text-muted);">
+                  Loading ingestion events from ecogen.db...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Hardware Snapshots Feed -->
+      <div class="glass-card">
+        <div class="glass-card-header">
+          <div>
+            <div class="card-title">
+              <i data-lucide="hard-drive" style="color:var(--eco-teal); width:18px; height:18px;"></i>
+              <span>Hardware Telemetry &amp; Idle Baseline Snapshots</span>
+            </div>
+            <div class="card-subtitle">Provides idle baseline power (P_idle) to isolate incremental AI compute power</div>
+          </div>
+          <button class="btn btn-secondary btn-sm" id="btnTriggerHwSnap">
+            <i data-lucide="camera" style="width:14px; height:14px;"></i> Snapshot Hardware
+          </button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table" id="hwTable">
+            <thead>
+              <tr>
+                <th>Snap ID</th>
+                <th>Timestamp</th>
+                <th>Device ID</th>
+                <th>Power Draw (W)</th>
+                <th>GPU Util %</th>
+                <th>Idle Baseline (W)</th>
+                <th>Amortization Date</th>
+              </tr>
+            </thead>
+            <tbody id="hwTableBody">
+              <tr>
+                <td colspan="7" style="text-align:center; padding:1.5rem; color:var(--text-muted);">
+                  Loading hardware snapshots...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- TAB 3: WHAT-IF OPTIMIZATION SIMULATOR -->
+    <!-- ======================================================== -->
+    <div class="tab-panel" id="tab-simulator">
+      <div class="glass-card">
+        <div class="glass-card-header">
+          <div>
+            <div class="card-title">
+              <i data-lucide="sparkles" style="color:var(--eco-mint); width:18px; height:18px;"></i>
+              <span>What-If Carbon &amp; Energy Optimization Simulator</span>
+            </div>
+            <div class="card-subtitle">
+              Interactive sandbox: Test architectural adjustments (GPU hardware, low-carbon grid regions, PUE, batching) against historical baseline inferences.
+            </div>
+          </div>
+        </div>
+
+        <div class="simulator-layout">
+          <!-- Left: Simulation Controls -->
+          <div style="background: rgba(0,0,0,0.2); border: 1px solid var(--bg-card-border); border-radius: var(--radius-lg); padding: 1.25rem;">
+            <div style="font-size:0.85rem; font-weight:700; color:#fff; margin-bottom:0.75rem; display:flex; align-items:center; gap:0.5rem;">
+              <i data-lucide="settings-2" style="width:16px; height:16px; color:var(--eco-mint);"></i>
+              <span>Simulation Overrides</span>
+            </div>
+
+            <!-- Base Event Picker -->
+            <div class="form-group">
+              <label class="form-label" for="simBaseEventSelect">
+                <span>Select Baseline Inference Event</span>
+                <span style="color:var(--text-muted); font-size:0.7rem;" id="simBaseEventMeta">Loading events...</span>
+              </label>
+              <select class="form-select" id="simBaseEventSelect">
+                <!-- Dynamically populated -->
+              </select>
+            </div>
+
+            <div class="simulator-form-grid">
+              <!-- Alt GPU -->
+              <div class="form-group">
+                <label class="form-label" for="simAltGpu">Target GPU Model</label>
+                <select class="form-select" id="simAltGpu">
+                  <option value="">(Keep Original)</option>
+                  <option value="T4">NVIDIA T4 (70W TDP - High Efficiency)</option>
+                  <option value="A100-80GB">NVIDIA A100 80GB (300W TDP - Datacenter)</option>
+                  <option value="V100">NVIDIA V100 (250W TDP)</option>
+                  <option value="RTX-4090">NVIDIA RTX 4090 (450W TDP)</option>
+                  <option value="CPU">CPU Inference Only</option>
+                </select>
+              </div>
+
+              <!-- Alt Region -->
+              <div class="form-group">
+                <label class="form-label" for="simAltRegion">Target Grid Region</label>
+                <select class="form-select" id="simAltRegion">
+                  <option value="">(Keep Original)</option>
+                  <option value="FR">France (~55 gCO₂eq/kWh - Low Carbon Nuclear)</option>
+                  <option value="UK">UK (~175 gCO₂eq/kWh - Offshore Wind)</option>
+                  <option value="US-CAL-CISO">California CAISO (~385 gCO₂eq/kWh - Solar)</option>
+                  <option value="DE">Germany (~380 gCO₂eq/kWh - Mixed)</option>
+                  <option value="IN">India (~710 gCO₂eq/kWh - Coal Heavy)</option>
+                </select>
+              </div>
+
+              <!-- Alt PUE -->
+              <div class="form-group">
+                <label class="form-label" for="simAltPue">
+                  <span>Datacenter PUE</span>
+                  <span id="pueValDisplay" style="color:var(--eco-mint);">1.10</span>
+                </label>
+                <select class="form-select" id="simAltPue">
+                  <option value="">(Keep Original)</option>
+                  <option value="1.10">1.10 (Hyperscale Green Facility)</option>
+                  <option value="1.20">1.20 (Modern Standard Datacenter)</option>
+                  <option value="1.40">1.40 (Average Enterprise Facility)</option>
+                  <option value="1.60">1.60 (Legacy On-Premises Server Room)</option>
+                </select>
+              </div>
+
+              <!-- Alt Batch Size -->
+              <div class="form-group">
+                <label class="form-label" for="simAltBatch">Batch Size</label>
+                <select class="form-select" id="simAltBatch">
+                  <option value="">(Keep Original)</option>
+                  <option value="1">Batch Size 1 (Real-time)</option>
+                  <option value="4">Batch Size 4</option>
+                  <option value="8">Batch Size 8 (Throughput Optimized)</option>
+                  <option value="16">Batch Size 16 (High Amortization)</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="margin-top: 1.25rem;">
+              <button class="btn btn-primary" id="btnRunSimulation" style="width:100%;">
+                <i data-lucide="play" style="width:16px; height:16px;"></i>
+                <span>Execute What-If Simulation</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Right: Simulation Results -->
+          <div class="sim-results-card">
+            <!-- Hero Reduction Banner -->
+            <div class="sim-delta-hero">
+              <div class="sim-delta-badge" id="simCarbonReductionBadge">0.0%</div>
+              <div class="sim-delta-label" id="simCarbonReductionLabel">Simulated Carbon Impact</div>
+              <div style="font-size:0.75rem; color:#94a3b8; margin-top:0.25rem;" id="simEnergyReductionSub">
+                Energy Reduction: 0.0%
+              </div>
+            </div>
+
+            <!-- Before vs After Comparison Grid -->
+            <div class="sim-comparison-grid">
+              <div class="sim-stat-box">
+                <div class="sim-stat-title">Baseline Energy</div>
+                <div class="sim-stat-val" id="simOrigEnergy">-- kWh</div>
+                <div style="font-size:0.72rem; color:var(--text-muted); margin-top:0.2rem;" id="simOrigEnergySub">Original event</div>
+              </div>
+
+              <div class="sim-stat-box">
+                <div class="sim-stat-title">Simulated Energy</div>
+                <div class="sim-stat-val" style="color:var(--eco-mint);" id="simNewEnergy">-- kWh</div>
+                <div style="font-size:0.72rem; color:var(--eco-mint); margin-top:0.2rem;" id="simEnergyDelta">Delta: --</div>
+              </div>
+
+              <div class="sim-stat-box">
+                <div class="sim-stat-title">Baseline Carbon</div>
+                <div class="sim-stat-val" id="simOrigCarbon">-- gCO₂eq</div>
+                <div style="font-size:0.72rem; color:var(--text-muted); margin-top:0.2rem;">Scope 2 + Scope 3</div>
+              </div>
+
+              <div class="sim-stat-box">
+                <div class="sim-stat-title">Simulated Carbon</div>
+                <div class="sim-stat-val" style="color:var(--eco-mint);" id="simNewCarbon">-- gCO₂eq</div>
+                <div style="font-size:0.72rem; color:var(--eco-mint); margin-top:0.2rem;" id="simCarbonDelta">Delta: --</div>
+              </div>
+            </div>
+
+            <!-- Optimization Levers Applied -->
+            <div class="sim-changes-list">
+              <div style="font-size:0.75rem; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:0.04em;">
+                Optimization Levers Applied
+              </div>
+              <ul id="simChangesAppliedList">
+                <li>Select parameters and run simulation to inspect impact</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- TAB 4: LAYER 2 BENCHMARKS & MODEL LEADERBOARD -->
+    <!-- ======================================================== -->
+    <div class="tab-panel" id="tab-benchmarks">
+      <!-- Task Type Statistical Profiles -->
+      <div class="glass-card" style="margin-bottom: 1.5rem;">
+        <div class="glass-card-header">
+          <div>
+            <div class="card-title">
+              <i data-lucide="bar-chart" style="color:var(--eco-mint); width:18px; height:18px;"></i>
+              <span>Task-Type Statistical Benchmarks (Layer 2)</span>
+            </div>
+            <div class="card-subtitle">
+              Calculates statistical distribution (min, median p50, average, 95th percentile, max) across GenAI tasks
+            </div>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table" id="benchmarksTable">
+            <thead>
+              <tr>
+                <th>Task Type</th>
+                <th>Sample Count</th>
+                <th>Avg Energy (kWh)</th>
+                <th>Median Energy (p50)</th>
+                <th>P95 Energy</th>
+                <th>Avg Carbon (gCO₂eq)</th>
+                <th>Median Carbon (p50)</th>
+                <th>P95 Carbon</th>
+              </tr>
+            </thead>
+            <tbody id="benchmarksTableBody">
+              <tr>
+                <td colspan="8" style="text-align:center; padding:1.5rem; color:var(--text-muted);">
+                  Loading task benchmarks...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Green Model Leaderboard -->
+      <div class="glass-card">
+        <div class="glass-card-header">
+          <div>
+            <div class="card-title">
+              <i data-lucide="medal" style="color:var(--eco-amber); width:18px; height:18px;"></i>
+              <span>Model Efficiency &amp; Carbon Rankings</span>
+            </div>
+            <div class="card-subtitle">
+              Ranked from greenest (lowest average gCO₂eq per inference event) to highest emissions
+            </div>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table" id="rankingsTable">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Model</th>
+                <th>Provider</th>
+                <th>Events Logged</th>
+                <th>Avg Carbon / Event</th>
+                <th>Avg Energy / Event</th>
+                <th>Tokens / kWh</th>
+                <th>Efficiency Rating</th>
+              </tr>
+            </thead>
+            <tbody id="rankingsTableBody">
+              <tr>
+                <td colspan="8" style="text-align:center; padding:1.5rem; color:var(--text-muted);">
+                  Loading model efficiency leaderboard...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- TAB 5: ARCHITECTURE, FORMULAS & PRESENTATION GUIDE -->
+    <!-- ======================================================== -->
+    <div class="tab-panel" id="tab-architecture">
+      <div class="glass-card">
+        <div class="glass-card-header">
+          <div>
+            <div class="card-title">
+              <i data-lucide="git-merge" style="color:var(--eco-mint); width:18px; height:18px;"></i>
+              <span>EcoGen-AI Mathematical Framework &amp; Platform Architecture</span>
+            </div>
+            <div class="card-subtitle">
+              Scientific references: Patterson et al. (2021), GHG Protocol Scope 2/3, Lacoste et al. (2019)
+            </div>
+          </div>
+        </div>
+
+        <div class="arch-grid">
+          <!-- Left: 2-Layer Architecture Overview -->
+          <div>
+            <h3 style="font-size:0.95rem; font-weight:700; color:#fff; margin-bottom:0.75rem;">
+              System Architecture Overview
+            </h3>
+            
+            <div style="background:rgba(15,23,42,0.7); border:1px solid var(--bg-card-border); border-radius:var(--radius-md); padding:1rem; margin-bottom:1rem;">
+              <div style="font-weight:700; color:var(--eco-mint); font-size:0.85rem; margin-bottom:0.35rem;">
+                Layer 1: Ingestion &amp; Hardware Telemetry
+              </div>
+              <p style="font-size:0.78rem; color:#cbd5e1; line-height:1.45;">
+                • Intercepts LLM inference invocations via Python decorators or REST endpoints.<br>
+                • Captures runtime wall-clock duration, input/output tokens, and power draw.<br>
+                • Pulls real-time grid carbon intensity from WattTime API and UK National Grid API.<br>
+                • Periodically samples idle system power to establish baseline power (P_idle).
+              </p>
+            </div>
+
+            <div style="background:rgba(15,23,42,0.7); border:1px solid var(--bg-card-border); border-radius:var(--radius-md); padding:1rem; margin-bottom:1rem;">
+              <div style="font-weight:700; color:var(--eco-teal); font-size:0.85rem; margin-bottom:0.35rem;">
+                Layer 2: Analytical Engine &amp; Benchmarking
+              </div>
+              <p style="font-size:0.78rem; color:#cbd5e1; line-height:1.45;">
+                • Implements 2-Tier Energy Accounting: Tier 1 measured power with idle baseline subtraction; Tier 2 theoretical FLOPs fallback.<br>
+                • GHG Scope 2 (Operational Grid Carbon) and Scope 3 (Embodied Hardware Amortization).<br>
+                • Task benchmarking across text, image, code assistance, and fine-tuning.<br>
+                • What-If optimization simulator for cloud/datacenter hardware and grid planning.
+              </p>
+            </div>
+
+            <div style="background:rgba(15,23,42,0.7); border:1px solid var(--bg-card-border); border-radius:var(--radius-md); padding:1rem;">
+              <div style="font-weight:700; color:var(--eco-violet); font-size:0.85rem; margin-bottom:0.35rem;">
+                Guide Review Q&amp;A Highlights
+              </div>
+              <p style="font-size:0.78rem; color:#cbd5e1; line-height:1.45;">
+                <strong>Q: How do you measure when power telemetry is missing?</strong><br>
+                A: We gracefully fall back to Tier 2: <code>FLOPs ≈ 2 × ActiveParams × Tokens</code> against GPU peak theoretical TFLOPS and TDP.<br><br>
+                <strong>Q: Why subtract idle power?</strong><br>
+                A: To avoid penalizing the AI model for background OS tasks, measuring only incremental marginal energy.
+              </p>
+            </div>
+          </div>
+
+          <!-- Right: Mathematical Formulas -->
+          <div>
+            <h3 style="font-size:0.95rem; font-weight:700; color:#fff; margin-bottom:0.75rem;">
+              Mathematical Formulations
+            </h3>
+
+            <!-- Formula 1: Tier 1 Energy -->
+            <div class="formula-card">
+              <div class="formula-title">Tier 1: Measured Energy (kWh) with PUE &amp; Idle Subtraction</div>
+              <div class="formula-code">
+E = ((P_active - P_idle) × runtime_sec × PUE × num_gpus) / 3,600,000
+              </div>
+              <div class="formula-note">Where P is in Watts, runtime in seconds, and 3,600,000 is Ws per kWh.</div>
+            </div>
+
+            <!-- Formula 2: Tier 2 FLOPs Fallback -->
+            <div class="formula-card">
+              <div class="formula-title">Tier 2: FLOPs-Based Energy Estimation (Patterson et al. 2021)</div>
+              <div class="formula-code">
+FLOPs ≈ 2 × active_params × 10⁹ × total_tokens
+E ≈ (FLOPs / (peak_TFLOPS × 10¹²)) × TDP_W × PUE × num_gpus / 3,600,000
+              </div>
+              <div class="formula-note">Applied with an empirical hardware utilization coefficient (η ≈ 0.45).</div>
+            </div>
+
+            <!-- Formula 3: Operational Carbon Scope 2 -->
+            <div class="formula-card">
+              <div class="formula-title">Scope 2: Operational Carbon Footprint</div>
+              <div class="formula-code">
+Scope2_gCO₂eq = Energy_kWh × Grid_Carbon_Intensity_(gCO₂eq/kWh)
+              </div>
+              <div class="formula-note">Regional carbon intensity obtained dynamically from live grid APIs.</div>
+            </div>
+
+            <!-- Formula 4: Embodied Carbon Scope 3 -->
+            <div class="formula-card">
+              <div class="formula-title">Scope 3: Embodied Manufacturing Carbon Amortization</div>
+              <div class="formula-code">
+Embodied_gCO₂eq = (GPU_Manufacturing_gCO₂eq / Lifespan_sec) × runtime_sec
+              </div>
+              <div class="formula-note">Amortizes silicon manufacturing and server lifecycle over 3-year expected lifetime.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ======================================================== -->
+  <!-- MODALS -->
+  <!-- ======================================================== -->
+
+  <!-- Modal 1: Log New Inference Event -->
+  <div class="modal-overlay" id="logEventModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i data-lucide="plus-circle" style="color:var(--eco-mint); width:20px; height:20px;"></i>
+          <span>Log New GenAI Inference Event</span>
+        </div>
+        <button class="modal-close-btn" id="btnCloseLogModal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div style="font-size:0.78rem; color:var(--text-secondary); margin-bottom:0.75rem;">
+          Quick Presets (1-Click Fill for Demo):
+        </div>
+        <div class="presets-wrap">
+          <button class="preset-chip" onclick="applyPreset('gemma-local')">⚡ Gemma-3 270M (Ollama Edge)</button>
+          <button class="preset-chip" onclick="applyPreset('gemini-cloud')">☁️ Gemini 1.5 Flash (Cloud)</button>
+          <button class="preset-chip" onclick="applyPreset('llama3-code')">💻 LLaMA-3 8B (Code Assistance)</button>
+          <button class="preset-chip" onclick="applyPreset('sdxl-image')">🎨 SDXL (Image Generation)</button>
+        </div>
+
+        <form id="logEventForm">
+          <div class="simulator-form-grid">
+            <div class="form-group">
+              <label class="form-label" for="inpModelName">Model Name *</label>
+              <input type="text" class="form-input" id="inpModelName" required placeholder="e.g. gemma3:270m">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="inpTaskType">Task Type</label>
+              <select class="form-select" id="inpTaskType">
+                <option value="text-generation">text-generation</option>
+                <option value="code-assistance">code-assistance</option>
+                <option value="image-generation">image-generation</option>
+                <option value="fine-tuning">fine-tuning</option>
+                <option value="embedding">embedding</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="inpProvider">Provider</label>
+              <select class="form-select" id="inpProvider">
+                <option value="ollama">Ollama (Local/Edge)</option>
+                <option value="gemini">Google Gemini Cloud</option>
+                <option value="openai">OpenAI Cloud</option>
+                <option value="huggingface">HuggingFace</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="inpDepartment">Department</label>
+              <select class="form-select" id="inpDepartment">
+                <option value="Engineering">Engineering</option>
+                <option value="Research">Research &amp; AI</option>
+                <option value="Product">Product</option>
+                <option value="Customer Support">Customer Support</option>
+                <option value="Marketing">Marketing</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="inpTokensIn">Prompt Tokens (In)</label>
+              <input type="number" class="form-input" id="inpTokensIn" value="25" min="0">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="inpTokensOut">Completion Tokens (Out)</label>
+              <input type="number" class="form-input" id="inpTokensOut" value="120" min="0">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="inpRuntime">Runtime (seconds) *</label>
+              <input type="number" step="0.01" class="form-input" id="inpRuntime" value="0.65" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="inpPowerWatts">Active Power (Watts)</label>
+              <input type="number" step="0.1" class="form-input" id="inpPowerWatts" value="22.5" placeholder="Leave empty for Tier 2">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="inpGpuModel">GPU Model</label>
+              <select class="form-select" id="inpGpuModel">
+                <option value="T4">NVIDIA T4</option>
+                <option value="A100-80GB">NVIDIA A100 80GB</option>
+                <option value="V100">NVIDIA V100</option>
+                <option value="RTX-4090">NVIDIA RTX 4090</option>
+                <option value="CPU">CPU</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="inpRegion">Region</label>
+              <select class="form-select" id="inpRegion">
+                <option value="US-CAL-CISO">US-CAL-CISO (California)</option>
+                <option value="UK">UK (United Kingdom)</option>
+                <option value="FR">FR (France)</option>
+                <option value="DE">DE (Germany)</option>
+                <option value="IN">IN (India)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="modal-footer" style="padding-left:0; padding-right:0; margin-top:1.25rem;">
+            <button type="button" class="btn btn-secondary" id="btnCancelLog">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="btnSubmitLog">
+              <i data-lucide="check" style="width:16px; height:16px;"></i> Ingest &amp; Compute
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Event Deep Dive Audit Modal -->
+  <div class="modal-overlay" id="deepDiveModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i data-lucide="search" style="color:var(--eco-teal); width:20px; height:20px;"></i>
+          <span>Event <span id="auditEventId">#1</span> Deep-Dive Audit</span>
+        </div>
+        <button class="modal-close-btn" id="btnCloseAuditModal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div style="font-size:0.85rem; color:#cbd5e1; margin-bottom:1rem;" id="auditEventSummary">
+          Loading per-event energy and carbon breakdown...
+        </div>
+
+        <div class="audit-grid">
+          <div class="audit-item">
+            <div class="audit-item-label">Total Energy (kWh)</div>
+            <div class="audit-item-val" id="auditEnergyKwh">--</div>
+            <div class="audit-item-sub" id="auditTierBadge">Tier 1 Measured</div>
+          </div>
+
+          <div class="audit-item">
+            <div class="audit-item-label">Total Carbon (gCO₂eq)</div>
+            <div class="audit-item-val" id="auditTotalCarbon">--</div>
+            <div class="audit-item-sub">Scope 2 + Scope 3</div>
+          </div>
+
+          <div class="audit-item">
+            <div class="audit-item-label">Operational Scope 2</div>
+            <div class="audit-item-val" id="auditScope2">--</div>
+            <div class="audit-item-sub" id="auditGridFactor">@ -- gCO₂/kWh</div>
+          </div>
+
+          <div class="audit-item">
+            <div class="audit-item-label">Embodied Scope 3</div>
+            <div class="audit-item-val" id="auditScope3">--</div>
+            <div class="audit-item-sub">Hardware Amortization</div>
+          </div>
+
+          <div class="audit-item">
+            <div class="audit-item-label">Tokens / kWh</div>
+            <div class="audit-item-val" id="auditTokensPerKwh">--</div>
+            <div class="audit-item-sub">Energy Efficiency</div>
+          </div>
+
+          <div class="audit-item">
+            <div class="audit-item-label">Energy per Token</div>
+            <div class="audit-item-val" id="auditEnergyPerToken">--</div>
+            <div class="audit-item-sub">Microjoules (μJ)</div>
+          </div>
+        </div>
+
+        <div style="margin-top:1.25rem; background:rgba(0,0,0,0.25); border-radius:var(--radius-md); padding:1rem; border:1px solid var(--bg-card-border);">
+          <div style="font-size:0.75rem; font-weight:700; color:#fff; text-transform:uppercase; margin-bottom:0.4rem;">
+            Power &amp; Datacenter Efficiency Breakdown
+          </div>
+          <div style="font-size:0.8rem; color:#94a3b8; display:flex; flex-direction:column; gap:0.25rem;">
+            <div>• Measured Active Power: <strong style="color:#fff;" id="auditActivePower">--</strong></div>
+            <div>• Idle System Baseline Power: <strong style="color:#fff;" id="auditIdlePower">--</strong></div>
+            <div>• Datacenter PUE Overhead: <strong style="color:#fff;" id="auditPue">--</strong></div>
+            <div>• Hardware Model: <strong style="color:#fff;" id="auditGpu">--</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btnCloseAuditBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: Guide Walkthrough Presentation Modal -->
+  <div class="modal-overlay" id="walkthroughModal">
+    <div class="modal-content" style="max-width:750px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i data-lucide="presentation" style="color:var(--eco-mint); width:20px; height:20px;"></i>
+          <span>EcoGen-AI Guide Review Walkthrough &amp; Demo Script</span>
+        </div>
+        <button class="modal-close-btn" id="btnCloseWalkthroughModal">&times;</button>
+      </div>
+
+      <div class="modal-body" style="font-size:0.85rem; line-height:1.6; color:#cbd5e1;">
+        <h4 style="color:#fff; font-size:1rem; margin-bottom:0.5rem;">5-Minute Presentation Flow for Tomorrow</h4>
+        <ol style="padding-left:1.25rem; display:flex; flex-direction:column; gap:0.6rem;">
+          <li>
+            <strong>1. Problem Statement &amp; Motivation:</strong> Generative AI inference consumes staggering amounts of electricity, yet developers lack standardized, real-time carbon auditing.
+          </li>
+          <li>
+            <strong>2. Layer 1 Ingestion:</strong> Show the <em>"Layer 1: Ingestion Feed"</em> tab. Demonstrate how inference duration, input/output tokens, and power telemetry are tracked across local edge models (Ollama) and cloud APIs (Gemini).
+          </li>
+          <li>
+            <strong>3. Live Event Ingestion:</strong> Click <strong>"Log Event"</strong>, choose <em>Gemma-3</em> or <em>Gemini Flash</em>, and click submit. Show that the backend computes energy and carbon immediately and updates all metrics.
+          </li>
+          <li>
+            <strong>4. Layer 2 Analytical Engine:</strong> Show the <em>"Executive Dashboard"</em> and <em>"Benchmarks"</em> tabs. Highlight the 2-tier energy computation (measured vs FLOPs fallback) and Scope 2 + Scope 3 embodied carbon.
+          </li>
+          <li>
+            <strong>5. What-If Optimization Sandbox:</strong> Switch to the <em>"What-If Simulator"</em> tab. Show how migrating a model from a coal grid to France (nuclear/clean) or modernizing from PUE 1.6 to 1.1 delivers up to <strong>70%+ carbon reductions</strong>.
+          </li>
+        </ol>
+
+        <div style="margin-top:1.25rem; background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); border-radius:var(--radius-md); padding:0.85rem 1rem;">
+          <div style="font-weight:700; color:var(--eco-mint); font-size:0.85rem;">Project Delivery Status</div>
+          <div style="font-size:0.78rem; color:#e2e8f0; margin-top:0.25rem;">
+            Both Layer 1 (Ingestion &amp; Hardware Telemetry) and Layer 2 (Analytical Engine, Benchmarking, Carbon Math, Simulator) are 100% verified and operational.
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="btnCloseWalkthroughBtn">Got it, Let's Demo!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- JavaScript Modules -->
+  <script src="/static/js/charts.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
