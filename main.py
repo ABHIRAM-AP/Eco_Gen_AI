@@ -31,9 +31,7 @@ STATIC_DIR = BASE_DIR / "static"
 from src.ingestion_layer.main import app as ingestion_app
 from src.analytical_engine.main import app as analytics_app
 
-# ---------------------------------------------------------------------------
 # Root application
-# ---------------------------------------------------------------------------
 root_app = FastAPI(
     title="EcoGen-AI Platform",
     description=(
@@ -97,16 +95,11 @@ def root_endpoint(request: Request):
     return root_health()
 
 
-# ---------------------------------------------------------------------------
 # Mount static assets & sub-applications
-# ---------------------------------------------------------------------------
 root_app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 root_app.mount("/ingest", ingestion_app)
 root_app.mount("/analytics", analytics_app)
 
 
-# ---------------------------------------------------------------------------
-# Dev entry point
-# ---------------------------------------------------------------------------
 if __name__ == "__main__":
     uvicorn.run("main:root_app", host="0.0.0.0", port=8000, reload=True)

@@ -1,8 +1,8 @@
-# collectors/genai_metadata.py
 import time
 from functools import wraps
 from typing import Optional
 import requests
+from .hardware_data import get_gpu_power_draw, get_cpu_power_estimate
 
 INGEST_URL = "http://127.0.0.1:8000/ingest/event"
 
@@ -128,7 +128,6 @@ def post_event(event_data: dict, region: Optional[str] = None):
         return None
 
 
-from .hardware_data import get_gpu_power_draw, get_cpu_power_estimate
 
 
 def track_inference(
